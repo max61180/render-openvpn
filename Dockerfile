@@ -1,12 +1,16 @@
 FROM kylemanna/openvpn
 
-# Устанавливаем cloudflared в Alpine Linux
-RUN apk add --no-cache wget && \
-    wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O /usr/local/bin/cloudflared && \
-    chmod +x /usr/local/bin/cloudflared
+# 1. Создаем директорию и файл конфига заранее
+RUN mkdir -p /etc/openvpn && touch /etc/openvpn/openvpn.conf
 
-# Запускаем OpenVPN через Cloudflare Tunnel
-CMD ["sh", "-c", "ovpn_genconfig -u tcp://$HOSTNAME --dev null && \
-     EASYRSA_BATCH=1 ovpn_initpki nopass && \
-     cloudflared tunnel --url tcp://localhost:1194 & \
-     openvpn --config /etc/openvpn/openvpn.conf"]
+# 2. Генерация конфига и ключей с проверками
+CMD ["sh", "-c", "\
+  echo 'Генерируем конфигурацию...' && \
+  ovpn_genconfig -u tcp://$HOSTNAME --dev null > /etc/openvpn/openvpn.conf && \
+  echo 'Конфиг создан. Содержимое:' && \
+  cat /etc/openvpn/openvpn.conf && \
+  echo 'Инициализируем PKI...' && \
+  EASYRSA_BATCH=1 ovpn_initpki nopass && \
+  echo 'Запускаем OpenVPN...' && \
+  openvpn --config /etc/openvpn/openvpn.conf \
+"]
