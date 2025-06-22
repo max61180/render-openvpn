@@ -1,16 +1,11 @@
-FROM kylemanna/openvpn
+FROM kylemanna/openvpn:2.4
 
-# 1. Создаем директорию и файл конфига заранее
-RUN mkdir -p /etc/openvpn && touch /etc/openvpn/openvpn.conf
-
-# 2. Генерация конфига и ключей с проверками
+# 1. Используем старую версию с совместимыми параметрами
+# 2. Генерируем конфиг с правильным синтаксисом
 CMD ["sh", "-c", "\
-  echo 'Генерируем конфигурацию...' && \
-  ovpn_genconfig -u tcp://$HOSTNAME --dev null > /etc/openvpn/openvpn.conf && \
-  echo 'Конфиг создан. Содержимое:' && \
-  cat /etc/openvpn/openvpn.conf && \
-  echo 'Инициализируем PKI...' && \
+  ovpn_genconfig -u tcp://$HOSTNAME -d && \
   EASYRSA_BATCH=1 ovpn_initpki nopass && \
-  echo 'Запускаем OpenVPN...' && \
+  echo 'Запускаем OpenVPN с конфигом:' && \
+  cat /etc/openvpn/openvpn.conf && \
   openvpn --config /etc/openvpn/openvpn.conf \
 "]
